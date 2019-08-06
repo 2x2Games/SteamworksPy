@@ -1,2 +1,5 @@
 *.pyc
 *.dll
+*.lib
+steam/
+SteamworksPy/
