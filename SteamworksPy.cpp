@@ -82,7 +82,8 @@ typedef void(*CreateItemResultCallback_t) (CreateItemResult_t);
 typedef void(*SubmitItemUpdateResultCallback_t) (SubmitItemUpdateResult_t);
 typedef void(*ItemInstalledCallback_t) (ItemInstalled_t);
 typedef void(*LeaderboardFindResultCallback_t) (LeaderboardFindResult_t);
-typedef void(*GameOverlayActivatedCallback_t) (GameOverlayActivated_t);
+typedef void(*GameOverlayActivatedCallback_t) (GameOverlayActivated_t); 
+typedef void(*ScreenshotReadyCallback_t) (ScreenshotReady_t);
 //-----------------------------------------------
 // Workshop Class
 //-----------------------------------------------
@@ -174,15 +175,27 @@ public:
 		_pyGameOverlayActivatedCallback = callback;
 	}
 
+	void SetScreenshotReadyCallback(ScreenshotReadyCallback_t callback) {
+		_pyScreenshotReadyCallback = callback;
+	}
+
 private:
 	STEAM_CALLBACK(SteamCallbacks, OnGameOverlayActivated, GameOverlayActivated_t);
+	STEAM_CALLBACK(SteamCallbacks, OnScreenshotReady, ScreenshotReady_t);
 
 	GameOverlayActivatedCallback_t _pyGameOverlayActivatedCallback = nullptr;
+	ScreenshotReadyCallback_t _pyScreenshotReadyCallback = nullptr;
 };
 
 void SteamCallbacks::OnGameOverlayActivated(GameOverlayActivated_t *pCallback) {
 	if (_pyGameOverlayActivatedCallback != nullptr) {
 		_pyGameOverlayActivatedCallback(*pCallback);
+	}
+}
+
+void SteamCallbacks::OnScreenshotReady(ScreenshotReady_t *pCallback) {
+	if (_pyScreenshotReadyCallback != nullptr && pCallback->m_eResult == k_EResultOK) {
+		_pyScreenshotReadyCallback(*pCallback);
 	}
 }
 
@@ -466,6 +479,12 @@ SW_PY void TriggerScreenshot(){
 		return;
 	}
 	SteamScreenshots()->TriggerScreenshot();
+}
+SW_PY bool SetScreenshotLocation(ScreenshotHandle hScreenshot, const char *pchLocation) {
+	if (SteamScreenshots() == NULL) {
+		return false;
+	}
+	return SteamScreenshots()->SetLocation(hScreenshot, pchLocation);
 }
 //-----------------------------------------------
 // Steam User
@@ -790,4 +809,7 @@ SW_PY void Leaderboard_FindLeaderboard(const char *pchLeaderboardName){
 //-----------------------------------------------
 SW_PY void Callbacks_SetGameOverlayActivatedCallback(GameOverlayActivatedCallback_t callback) {
 	callbacks.SetGameOverlayActivatedCallback(callback);
+}
+SW_PY void Callbacks_SetScreenshotReadyCallback(ScreenshotReadyCallback_t callback) {
+	callbacks.SetScreenshotReadyCallback(callback);
 }

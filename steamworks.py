@@ -149,6 +149,8 @@ class Steam:
         Steam.cdll.MusicSetVolume.restype = c_float
         # Set restype for Screenshot functions
         Steam.cdll.TriggerScreenshot.restype = None
+        Steam.cdll.SetScreenshotLocation.argtypes = [c_uint32, c_char_p]
+        Steam.cdll.SetScreenshotLocation.restype = None
         # Set restype for User functions
         Steam.cdll.GetSteamID.restype = c_uint64
         Steam.cdll.GetPlayerSteamLevel.restype = int
@@ -503,6 +505,30 @@ class SteamScreenshots:
             return Steam.cdll.TriggerScreenshot()
         else:
             return
+
+    @staticmethod
+    def SetScreenshotLocation(hScreenshot, pchLocation):
+        if Steam.isSteamLoaded():
+            return Steam.cdll.SetScreenshotLocation(hScreenshot, pchLocation)
+        else:
+            return
+
+    class ScreenshotReady_t(Structure):
+        _fields_ = [
+            ("m_hLocal", c_uint32),
+            ("m_eResult", c_uint32),
+        ]
+    SCREENSHOT_READY_CALLBACK_TYPE = CFUNCTYPE(None, ScreenshotReady_t)
+    screenshotReadyCallback = None
+
+    @classmethod
+    def SetScreenshotReadyCallback(cls, callback):
+        if Steam.isSteamLoaded():
+            cls.screenshotReadyCallback = cls.SCREENSHOT_READY_CALLBACK_TYPE(callback)
+
+            Steam.cdll.Callbacks_SetScreenshotReadyCallback(cls.screenshotReadyCallback)
+        else:
+            return False
 #------------------------------------------------
 # Class for Steam Users
 #------------------------------------------------
