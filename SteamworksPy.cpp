@@ -6,6 +6,8 @@
 //-----------------------------------------------
 #if defined( _WIN32 )
 	#include "steam\steam_api.h"
+	#include "steam\isteamfriends.h"
+	#include <iostream> 
 	#define SW_PY extern "C" __declspec(dllexport)
 #elif defined( __APPLE__ )
 	#include "steam/steam_api.h"
@@ -80,6 +82,7 @@ typedef void(*CreateItemResultCallback_t) (CreateItemResult_t);
 typedef void(*SubmitItemUpdateResultCallback_t) (SubmitItemUpdateResult_t);
 typedef void(*ItemInstalledCallback_t) (ItemInstalled_t);
 typedef void(*LeaderboardFindResultCallback_t) (LeaderboardFindResult_t);
+typedef void(*GameOverlayActivatedCallback_t) (GameOverlayActivated_t);
 //-----------------------------------------------
 // Workshop Class
 //-----------------------------------------------
@@ -161,6 +164,29 @@ private:
 	}
 };
 static Leaderboard leaderboard;
+//-----------------------------------------------
+// Callbacks class
+//-----------------------------------------------
+class SteamCallbacks
+{
+public:
+	void SetGameOverlayActivatedCallback(GameOverlayActivatedCallback_t callback) {
+		_pyGameOverlayActivatedCallback = callback;
+	}
+
+private:
+	STEAM_CALLBACK(SteamCallbacks, OnGameOverlayActivated, GameOverlayActivated_t);
+
+	GameOverlayActivatedCallback_t _pyGameOverlayActivatedCallback = nullptr;
+};
+
+void SteamCallbacks::OnGameOverlayActivated(GameOverlayActivated_t *pCallback) {
+	if (_pyGameOverlayActivatedCallback != nullptr) {
+		_pyGameOverlayActivatedCallback(*pCallback);
+	}
+}
+
+static SteamCallbacks callbacks;
 //-----------------------------------------------
 // Steamworks functions
 //-----------------------------------------------
@@ -758,4 +784,10 @@ SW_PY void Leaderboard_FindLeaderboard(const char *pchLeaderboardName){
 		return;
 	}
 	leaderboard.FindLeaderboard(pchLeaderboardName);
+}
+//-----------------------------------------------
+// Steam Callbacks
+//-----------------------------------------------
+SW_PY void Callbacks_SetGameOverlayActivatedCallback(GameOverlayActivatedCallback_t callback) {
+	callbacks.SetGameOverlayActivatedCallback(callback);
 }

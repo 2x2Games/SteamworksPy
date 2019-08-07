@@ -75,10 +75,7 @@ class Steam:
         # Loading SteamworksPy API for Windows
         elif sys.platform == 'win32':
             # Check Windows architecture
-            if OS_BIT == '32bits':
-                Steam.cdll = CDLL(os.path.join(dynamicLibDir, "SteamworksPy.dll"))
-            else:
-                Steam.cdll = CDLL(os.path.join(dynamicLibDir, "SteamworksPy64.dll"))
+            Steam.cdll = CDLL(os.path.join(dynamicLibDir, "SteamworksPy.dll"))
             logger.info("SteamworksPy loaded for Windows")
             Steam.loaded = True
         # Unrecognized platform, warn user, do not load Steam API
@@ -387,6 +384,22 @@ class SteamFriends:
             return Steam.cdll.ActivateGameOverlayToWebPage(steamID)
         else:
             return
+
+    class GameOverlayActivated_t(Structure):
+        _fields_ = [
+            ("m_bActive", c_uint8)
+        ]
+    GAME_OVERLAY_ACTIVATED_CALLBACK_TYPE = CFUNCTYPE(None, GameOverlayActivated_t)
+    gameOverlayActivatedCallback = None
+
+    @classmethod
+    def SetGameOverlayActivatedCallback(cls, callback):
+        if Steam.isSteamLoaded():
+            cls.gameOverlayActivatedCallback = cls.GAME_OVERLAY_ACTIVATED_CALLBACK_TYPE(callback)
+
+            Steam.cdll.Callbacks_SetGameOverlayActivatedCallback(cls.gameOverlayActivatedCallback)
+        else:
+            return False
 #------------------------------------------------
 # Class for Steam Matchmaking
 #------------------------------------------------ 
