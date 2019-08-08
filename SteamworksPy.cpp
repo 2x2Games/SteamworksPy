@@ -257,23 +257,6 @@ SW_PY void Stats_RequestGlobalStats(int nHistoryDays) {
 //-----------------------------------------------
 SW_PY bool SteamInit(){
 	return SteamAPI_Init();
-	// Look for errors
-	bool IS_INIT_SUCCESS = SteamAPI_Init();
-	int err = FAILED;
-	if(IS_INIT_SUCCESS == 1){
-		err = OK;
-	}
-	if(!SteamAPI_IsSteamRunning()){
-		err = ERR_NO_CLIENT;
-	}
-	else if(!SteamUser()->BLoggedOn()){
-		err = ERR_NO_CONNECTION;
-	}
-	if(err == OK && SteamUserStats() != NULL){
-		// Load stats and achievements automatically
-		SteamUserStats()->RequestCurrentStats();
-	}
-	return err;
 }
 // Returns true/false if Steam is running
 SW_PY bool IsSteamRunning(void){
