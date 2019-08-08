@@ -84,7 +84,8 @@ typedef void(*ItemInstalledCallback_t) (ItemInstalled_t);
 typedef void(*LeaderboardFindResultCallback_t) (LeaderboardFindResult_t);
 typedef void(*GameOverlayActivatedCallback_t) (GameOverlayActivated_t);
 typedef void(*ScreenshotReadyCallback_t) (ScreenshotReady_t);
-typedef void(*UserStatsReceivedCallback_t) (UserStatsReceived_t);
+typedef void(*UserStatsReceivedCallback_t) (UserStatsReceived_t); 
+typedef void(*GlobalStatsReceivedCallback_t) (GlobalStatsReceived_t);
 //-----------------------------------------------
 // Workshop Class
 //-----------------------------------------------
@@ -184,7 +185,18 @@ public:
 		_pyUserStatsReceivedCallback = callback;
 	}
 
+	void SetGlobalStatsReceivedCallback(GlobalStatsReceivedCallback_t callback) {
+		_pyGlobalStatsReceivedCallback = callback;
+	}
+
+	void RequestGlobalStats(int nHistoryDays) {
+		const SteamAPICall_t hSteamAPICall = SteamUserStats()->RequestGlobalStats(nHistoryDays);
+		m_RequestGlobalStatsCallResult.Set(hSteamAPICall, this, &SteamCallbacks::OnGlobalStatsReceived);
+	}
+
 private:
+	CCallResult< SteamCallbacks, GlobalStatsReceived_t > m_RequestGlobalStatsCallResult;
+
 	STEAM_CALLBACK(SteamCallbacks, OnGameOverlayActivated, GameOverlayActivated_t);
 	STEAM_CALLBACK(SteamCallbacks, OnScreenshotReady, ScreenshotReady_t);
 	STEAM_CALLBACK(SteamCallbacks, OnUserStatsReceived, UserStatsReceived_t);
@@ -192,6 +204,15 @@ private:
 	GameOverlayActivatedCallback_t _pyGameOverlayActivatedCallback = nullptr;
 	ScreenshotReadyCallback_t _pyScreenshotReadyCallback = nullptr;
 	UserStatsReceivedCallback_t _pyUserStatsReceivedCallback = nullptr;
+	GlobalStatsReceivedCallback_t _pyGlobalStatsReceivedCallback = nullptr;
+
+	void OnGlobalStatsReceived(GlobalStatsReceived_t *pCallback, bool bIOFailure) {
+		if (_pyGlobalStatsReceivedCallback == nullptr || bIOFailure || pCallback->m_eResult != k_EResultOK) {
+			return;
+		}
+
+		_pyGlobalStatsReceivedCallback(*pCallback);
+	}
 };
 
 void SteamCallbacks::OnGameOverlayActivated(GameOverlayActivated_t *pCallback) {
@@ -213,6 +234,24 @@ void SteamCallbacks::OnUserStatsReceived(UserStatsReceived_t *pCallback) {
 }
 
 static SteamCallbacks callbacks;
+
+
+SW_PY void Callbacks_SetGameOverlayActivatedCallback(GameOverlayActivatedCallback_t callback) {
+	callbacks.SetGameOverlayActivatedCallback(callback);
+}
+SW_PY void Callbacks_SetScreenshotReadyCallback(ScreenshotReadyCallback_t callback) {
+	callbacks.SetScreenshotReadyCallback(callback);
+}
+SW_PY void Callbacks_SetUserStatsReceivedCallback(UserStatsReceivedCallback_t callback) {
+	callbacks.SetUserStatsReceivedCallback(callback);
+}
+SW_PY void Callbacks_SetGlobalStatsReceivedCallback(GlobalStatsReceivedCallback_t callback) {
+	callbacks.SetGlobalStatsReceivedCallback(callback);
+}
+SW_PY void Stats_RequestGlobalStats(int nHistoryDays) {
+	callbacks.RequestGlobalStats(nHistoryDays);
+}
+
 //-----------------------------------------------
 // Steamworks functions
 //-----------------------------------------------
@@ -559,6 +598,22 @@ SW_PY int32 GetStatInt(const char* name){
 	SteamUserStats()->GetStat(name, &statval);
 	return statval;
 }
+SW_PY double GetGlobalStatFloat(const char* name) {
+	if (SteamUser() == NULL) {
+		return 0;
+	}
+	double statval = 0;
+	SteamUserStats()->GetGlobalStat(name, &statval);
+	return statval;
+}
+SW_PY int64 GetGlobalStatInt(const char* name) {
+	if (SteamUser() == NULL) {
+		return 0;
+	}
+	int64 statval = 0;
+	SteamUserStats()->GetGlobalStat(name, &statval);
+	return statval;
+}
 SW_PY bool ResetAllStats(bool achievesToo){
 	if(SteamUser() == NULL){
 		return false;
@@ -816,16 +871,4 @@ SW_PY void Leaderboard_FindLeaderboard(const char *pchLeaderboardName){
 		return;
 	}
 	leaderboard.FindLeaderboard(pchLeaderboardName);
-}
-//-----------------------------------------------
-// Steam Callbacks
-//-----------------------------------------------
-SW_PY void Callbacks_SetGameOverlayActivatedCallback(GameOverlayActivatedCallback_t callback) {
-	callbacks.SetGameOverlayActivatedCallback(callback);
-}
-SW_PY void Callbacks_SetScreenshotReadyCallback(ScreenshotReadyCallback_t callback) {
-	callbacks.SetScreenshotReadyCallback(callback);
-}
-SW_PY void Callbacks_SetUserStatsReceivedCallback(UserStatsReceivedCallback_t callback) {
-	callbacks.SetUserStatsReceivedCallback(callback);
 }

@@ -159,6 +159,8 @@ class Steam:
         Steam.cdll.GetAchievement.restype = bool
         Steam.cdll.GetStatInt.restype = int
         Steam.cdll.GetStatFloat.restype = c_float
+        Steam.cdll.GetGlobalStatInt.restype = c_uint64
+        Steam.cdll.GetGlobalStatFloat.restype = c_double
         Steam.cdll.ResetAllStats.restype = bool
         Steam.cdll.RequestCurrentStats.restype = bool
         Steam.cdll.SetAchievement.restype = bool
@@ -554,6 +556,28 @@ class SteamUser:
             return Steam.cdll.GetUserDataFolder()
         else:
             return ""
+    # Get the value of a float statistic
+    @staticmethod
+    def GetGobalStatFloat(name):
+        if Steam.isSteamLoaded():
+            return Steam.cdll.GetGobalStatFloat(name)
+        else:
+            return 0
+    # Get the value of an integer statistic
+    @staticmethod
+    def GetGlobalStatInt(name):
+        if Steam.isSteamLoaded():
+            return Steam.cdll.GetGlobalStatInt(name)
+        else:
+            return 0
+
+    @staticmethod
+    def RequestGlobalStats(nHistoryDays):
+        if Steam.isSteamLoaded():
+            Steam.cdll.Stats_RequestGlobalStats(nHistoryDays)
+            return True
+        else:
+            return False
 
     class UserStatsReceived_t(Structure):
         _fields_ = [
@@ -569,6 +593,23 @@ class SteamUser:
         if Steam.isSteamLoaded():
             cls.userStatsReceivedCallback = cls.USER_STATS_RECEIVED_CALLBACK_TYPE(callback)
             Steam.cdll.Callbacks_SetUserStatsReceivedCallback(cls.userStatsReceivedCallback)
+            return True
+        else:
+            return False
+
+    class GlobalStatsReceived_t(Structure):
+        _fields_ = [
+            ("m_nGameID", c_uint64),
+            ("m_eResult", c_uint32),
+        ]
+    GLOBAL_STATS_RECEIVED_CALLBACK_TYPE = CFUNCTYPE(None, GlobalStatsReceived_t)
+    globalStatsReceivedCallback = None
+
+    @classmethod
+    def SetGlobalStatsReceivedCallback(cls, callback):
+        if Steam.isSteamLoaded():
+            cls.globalStatsReceivedCallback = cls.GLOBAL_STATS_RECEIVED_CALLBACK_TYPE(callback)
+            Steam.cdll.Callbacks_SetGlobalStatsReceivedCallback(cls.globalStatsReceivedCallback)
             return True
         else:
             return False
