@@ -398,8 +398,8 @@ class SteamFriends:
     def SetGameOverlayActivatedCallback(cls, callback):
         if Steam.isSteamLoaded():
             cls.gameOverlayActivatedCallback = cls.GAME_OVERLAY_ACTIVATED_CALLBACK_TYPE(callback)
-
             Steam.cdll.Callbacks_SetGameOverlayActivatedCallback(cls.gameOverlayActivatedCallback)
+            return True
         else:
             return False
 #------------------------------------------------
@@ -525,8 +525,8 @@ class SteamScreenshots:
     def SetScreenshotReadyCallback(cls, callback):
         if Steam.isSteamLoaded():
             cls.screenshotReadyCallback = cls.SCREENSHOT_READY_CALLBACK_TYPE(callback)
-
             Steam.cdll.Callbacks_SetScreenshotReadyCallback(cls.screenshotReadyCallback)
+            return True
         else:
             return False
 #------------------------------------------------
@@ -554,6 +554,24 @@ class SteamUser:
             return Steam.cdll.GetUserDataFolder()
         else:
             return ""
+
+    class UserStatsReceived_t(Structure):
+        _fields_ = [
+            ("m_nGameID", c_uint64),
+            ("m_eResult", c_uint32),
+            ("m_steamIDUser", c_uint64),
+        ]
+    USER_STATS_RECEIVED_CALLBACK_TYPE = CFUNCTYPE(None, UserStatsReceived_t)
+    userStatsReceivedCallback = None
+
+    @classmethod
+    def SetUserStatsReceivedCallback(cls, callback):
+        if Steam.isSteamLoaded():
+            cls.userStatsReceivedCallback = cls.USER_STATS_RECEIVED_CALLBACK_TYPE(callback)
+            Steam.cdll.Callbacks_SetUserStatsReceivedCallback(cls.userStatsReceivedCallback)
+            return True
+        else:
+            return False
 #------------------------------------------------
 # Class for Steam User Statistics
 #------------------------------------------------
