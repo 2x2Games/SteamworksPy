@@ -240,6 +240,10 @@ class Steam:
             return True
         else:
             return False
+    # Shutdown
+    @staticmethod
+    def Shutdown():
+        Steam.cdll.SteamShutdown()
 #------------------------------------------------
 # Class for Steam Apps
 #------------------------------------------------
