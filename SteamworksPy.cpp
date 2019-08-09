@@ -195,13 +195,12 @@ public:
 	}
 
 private:
-  int64 m_iAppID;
-
 	CCallResult< SteamCallbacks, GlobalStatsReceived_t > m_RequestGlobalStatsCallResult;
 
-	STEAM_CALLBACK(SteamCallbacks, OnGameOverlayActivated, GameOverlayActivated_t);
-	STEAM_CALLBACK(SteamCallbacks, OnScreenshotReady, ScreenshotReady_t);
-	STEAM_CALLBACK(SteamCallbacks, OnUserStatsReceived, UserStatsReceived_t);
+  STEAM_CALLBACK(SteamCallbacks, OnGameOverlayActivated, GameOverlayActivated_t);
+  STEAM_CALLBACK(SteamCallbacks, OnScreenshotReady, ScreenshotReady_t);
+  STEAM_CALLBACK(SteamCallbacks, OnUserStatsReceived, UserStatsReceived_t);
+  STEAM_CALLBACK(SteamCallbacks, OnUserStatsStored, UserStatsStored_t);
 
 	GameOverlayActivatedCallback_t _pyGameOverlayActivatedCallback = nullptr;
 	ScreenshotReadyCallback_t _pyScreenshotReadyCallback = nullptr;
@@ -232,6 +231,19 @@ void SteamCallbacks::OnUserStatsReceived(UserStatsReceived_t *pCallback) {
 	if (_pyUserStatsReceivedCallback != nullptr && SteamUtils()->GetAppID() == pCallback->m_nGameID && pCallback->m_eResult == k_EResultOK) {
       _pyUserStatsReceivedCallback(*pCallback);
 	}
+}
+
+void SteamCallbacks::OnUserStatsStored(UserStatsStored_t *pCallback) {
+  const uint64 appID = SteamUtils()->GetAppID();
+  if(pCallback->m_nGameID == appID && pCallback->m_eResult == k_EResultInvalidParam) {
+    // One or more stats we set broke a constraint. They've been reverted,
+    // and we should re-iterate the values now to keep in sync.
+    // Fake up a callback here so that we re-load the values.
+    UserStatsReceived_t callback;
+    callback.m_eResult = k_EResultOK;
+    callback.m_nGameID = appID;
+    OnUserStatsReceived(&callback);
+  }
 }
 
 static SteamCallbacks callbacks;
