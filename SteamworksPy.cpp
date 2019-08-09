@@ -125,18 +125,18 @@ public:
 		_itemUpdatedCallback.Set(submitItemUpdateCall, this, &Workshop::OnItemUpdateSubmitted);
 	}
 private:
-	void OnWorkshopItemCreated(CreateItemResult_t* createItemResult, bool bIOFailure){
-		if(_pyItemCreatedCallback != nullptr){
+	void OnWorkshopItemCreated(CreateItemResult_t *createItemResult, bool bIOFailure) {
+		if(_pyItemCreatedCallback != nullptr && !bIOFailure && createItemResult->m_eResult == k_EResultOK) {
 			_pyItemCreatedCallback(*createItemResult);
 		}
 	}
-	void OnItemUpdateSubmitted(SubmitItemUpdateResult_t* submitItemUpdateResult, bool bIOFailure){
-		if(_pyItemUpdatedCallback != nullptr){
+	void OnItemUpdateSubmitted(SubmitItemUpdateResult_t *submitItemUpdateResult, bool bIOFailure) {
+		if(_pyItemUpdatedCallback != nullptr && !bIOFailure && submitItemUpdateResult->m_eResult == k_EResultOK) {
 			_pyItemUpdatedCallback(*submitItemUpdateResult);
 		}
 	}
-	void OnItemInstalled(ItemInstalled_t* itemInstalledResult){
-		if(_pyItemInstalledCallback != nullptr){
+	void OnItemInstalled(ItemInstalled_t *itemInstalledResult) {
+		if(_pyItemInstalledCallback != nullptr && itemInstalledResult->m_unAppID == SteamUtils()->GetAppID()) {
 			_pyItemInstalledCallback(*itemInstalledResult);
 		}
 	}
@@ -160,8 +160,8 @@ public:
 		_leaderboardFindResultCallback.Set(leaderboardFindResultCall, this, &Leaderboard::OnLeaderboardFindResult);
 	}
 private:
-	void OnLeaderboardFindResult(LeaderboardFindResult_t* leaderboardFindResult, bool bIOFailure){
-		if(_pyLeaderboardFindResultCallback != nullptr){
+	void OnLeaderboardFindResult(LeaderboardFindResult_t *leaderboardFindResult, bool bIOFailure) {
+		if(_pyLeaderboardFindResultCallback != nullptr && !bIOFailure) {
 			_pyLeaderboardFindResultCallback(*leaderboardFindResult);
 		}
 	}
@@ -195,6 +195,8 @@ public:
 	}
 
 private:
+  int64 m_iAppID;
+
 	CCallResult< SteamCallbacks, GlobalStatsReceived_t > m_RequestGlobalStatsCallResult;
 
 	STEAM_CALLBACK(SteamCallbacks, OnGameOverlayActivated, GameOverlayActivated_t);
@@ -207,11 +209,10 @@ private:
 	GlobalStatsReceivedCallback_t _pyGlobalStatsReceivedCallback = nullptr;
 
 	void OnGlobalStatsReceived(GlobalStatsReceived_t *pCallback, bool bIOFailure) {
-		if (_pyGlobalStatsReceivedCallback == nullptr || bIOFailure || pCallback->m_eResult != k_EResultOK) {
-			return;
+		if (_pyGlobalStatsReceivedCallback != nullptr && !bIOFailure && pCallback->m_eResult == k_EResultOK && SteamUtils()->GetAppID() == pCallback->m_nGameID) {
+      _pyGlobalStatsReceivedCallback(*pCallback);
 		}
 
-		_pyGlobalStatsReceivedCallback(*pCallback);
 	}
 };
 
@@ -228,8 +229,8 @@ void SteamCallbacks::OnScreenshotReady(ScreenshotReady_t *pCallback) {
 }
 
 void SteamCallbacks::OnUserStatsReceived(UserStatsReceived_t *pCallback) {
-	if (_pyUserStatsReceivedCallback != nullptr) {
-		_pyUserStatsReceivedCallback(*pCallback);
+	if (_pyUserStatsReceivedCallback != nullptr && SteamUtils()->GetAppID() == pCallback->m_nGameID && pCallback->m_eResult == k_EResultOK) {
+      _pyUserStatsReceivedCallback(*pCallback);
 	}
 }
 
@@ -604,7 +605,7 @@ SW_PY bool ResetAllStats(bool achievesToo){
 	return SteamUserStats()->ResetAllStats(achievesToo);
 }
 SW_PY bool RequestCurrentStats(){
-	if(SteamUser() == NULL){
+	if(SteamUser() == NULL || SteamUserStats() == NULL || !SteamUser()->BLoggedOn()){
 		return false;
 	}
 	return SteamUserStats()->RequestCurrentStats();
