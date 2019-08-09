@@ -271,6 +271,9 @@ SW_PY void Stats_RequestGlobalStats(int nHistoryDays) {
 SW_PY bool SteamInit(){
 	return SteamAPI_Init();
 }
+SW_PY void SteamShutdown() {
+  SteamAPI_Shutdown();
+}
 // Returns true/false if Steam is running
 SW_PY bool IsSteamRunning(void){
 	return SteamAPI_IsSteamRunning();
