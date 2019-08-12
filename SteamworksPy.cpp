@@ -573,9 +573,15 @@ SW_PY bool ClearAchievement(const char* name){
 	}
 	return SteamUserStats()->ClearAchievement(name);
 }
-SW_PY bool GetAchievement(const char* name){
+SW_PY bool IndicateAchievementProgress(const char *name, uint32 nCurProgress, uint32 nMaxProgress){
 	if(SteamUser() == NULL){
-		return "";
+		return false;
+	}
+	return SteamUserStats()->IndicateAchievementProgress(name, nCurProgress, nMaxProgress);
+}
+SW_PY bool GetAchievement(const char* name) {
+	if (SteamUser() == NULL) {
+		return false;
 	}
 	bool achieved = false;
 	SteamUserStats()->GetAchievement(name, &achieved);

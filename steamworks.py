@@ -157,6 +157,7 @@ class Steam:
         Steam.cdll.GetUserDataFolder.restype = c_char_p
         # Set restype for User Statistic functions
         Steam.cdll.GetAchievement.restype = bool
+        Steam.cdll.IndicateAchievementProgress.restype = bool
         Steam.cdll.GetStatInt.restype = int
         Steam.cdll.GetStatFloat.restype = c_float
         Steam.cdll.GetGlobalStatInt.restype = c_uint64
@@ -633,6 +634,13 @@ class SteamUserStats:
     def GetStatFloat(name):
         if Steam.isSteamLoaded():
             return Steam.cdll.GetStatFloat(name)
+        else:
+            return 0
+    # Get the value of a float statistic
+    @staticmethod
+    def IndicateAchievementProgress(name, nCurProgress, nMaxProgress):
+        if Steam.isSteamLoaded():
+            return Steam.cdll.IndicateAchievementProgress(name, nCurProgress, nMaxProgress)
         else:
             return 0
     # Get the value of an integer statistic
