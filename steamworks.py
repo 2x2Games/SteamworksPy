@@ -4,6 +4,7 @@
 from ctypes import *
 import sys, os
 import logging
+from types import SimpleNamespace
 logger = logging.getLogger(__name__)
 #------------------------------------------------
 # User Status
@@ -1097,11 +1098,10 @@ class SteamWorkshop:
             isInstalled = Steam.cdll.Workshop_GetItemInstallInfo(publishedFileId, pSizeOnDisk, pFolder, maxFolderPathLength, pTimestamp)
 
             if isInstalled:
-                itemInfo = {
-                    'sizeOnDisk' : pSizeOnDisk.contents.value,
-                    'folder' : pFolder.value.decode(),
-                    'timestamp' : pTimestamp.contents.value
-                }
+                itemInfo = SimpleNamespace(
+                    size_on_disk=pSizeOnDisk.contents.value,
+                    folder=pFolder.value.decode(),
+                    timestamp=pTimestamp.contents.value)
 
                 return itemInfo
 
@@ -1112,11 +1112,10 @@ class SteamWorkshop:
     # publishedFileId -- the id of the item whose download info to look up
     #
     # Return Value:
-    # If download information is available returns an object with
+    # If download information is available returns a SimpleNamespace with
     # the following attributes
-    # -- 'bytesDownloaded'- the amount of downloaded bytes
-    # -- 'bytesTotal' - the total amounts of bytes an item has
-    # -- 'progress' - a value ranging from 0 to 1 representing download progress
+    # -- 'bytes_downloaded'- the amount of downloaded bytes
+    # -- 'bytes_total' - the total amounts of bytes an item has
     #
     # If download information or steamworks or not available,
     # returns False
@@ -1130,14 +1129,9 @@ class SteamWorkshop:
             if downloadInfoAvailable:
                 bytesDownloaded = pBytesDownloaded.contents.value
                 bytesTotal = pBytesTotal.contents.value
-                progress = 0
-                if bytesTotal > 0:
-                    progress = bytesDownloaded / bytesTotal
-                downloadInfo = {
-                    'bytesDownloaded' : bytesDownloaded,
-                    'bytesTotal' : bytesTotal,
-                    'progress' : progress
-                }
+                downloadInfo = SimpleNamespace(
+                    bytes_downloaded=bytesDownloaded,
+                    bytes_total=bytesTotal)
                 return downloadInfo
             return False
         else:
