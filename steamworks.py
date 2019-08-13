@@ -749,6 +749,13 @@ class SteamWorkshop:
             ("result", c_uint32),
             ("published_file_id", c_uint64)
         ]
+    # A class that describes Steam's DownloadItemResult_t C struct
+    class DownloadItemResult_t(Structure):
+        _fields_ = [
+            ("app_id", c_uint32),
+            ("published_file_id", c_uint64),
+            ("result", c_uint32),
+        ]
     # We want to keep callbacks in the class scope, so that they don't get
     # garbage collected while we still need them.
     ITEM_CREATED_CALLBACK_TYPE = CFUNCTYPE(None, CreateItemResult_t)
@@ -762,6 +769,9 @@ class SteamWorkshop:
 
     ITEM_DELETED_CALLBACK_TYPE = CFUNCTYPE(None, DeleteItemResult_t)
     itemDeletedCallback = None
+
+    ITEM_DOWNLOADED_CALLBACK_TYPE = CFUNCTYPE(None, DownloadItemResult_t)
+    itemDownloadedCallback = None
     #
     @classmethod
     def SetItemCreatedCallback(cls, callback):
@@ -788,7 +798,7 @@ class SteamWorkshop:
         return False
     #
     @classmethod
-    def ClearItemInstalledCallback(cls, callback):
+    def ClearItemInstalledCallback(cls):
         if Steam.isSteamLoaded():
             cls.itemInstalledCallback = None
             Steam.cdll.Workshop_ClearItemInstalledCallback()
@@ -799,7 +809,15 @@ class SteamWorkshop:
     def SetDeleteItemResultCallback(cls, callback):
         if Steam.isSteamLoaded():
             cls.itemDeletedCallback = cls.ITEM_DELETED_CALLBACK_TYPE(callback)
-            Steam.cdll.Workshop_SetDeleteItemResultCallback(cls.itemInstalledCallback)
+            Steam.cdll.Workshop_SetDeleteItemResultCallback(cls.itemDeletedCallback)
+            return True
+        return False
+    #
+    @classmethod
+    def SetDownloadItemResultCallback(cls, callback):
+        if Steam.isSteamLoaded():
+            cls.itemDownloadedCallback = cls.ITEM_DOWNLOADED_CALLBACK_TYPE(callback)
+            Steam.cdll.Workshop_SetDownloadItemResultCallback(cls.itemDownloadedCallback)
             return True
         return False
     #

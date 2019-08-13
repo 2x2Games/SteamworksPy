@@ -87,6 +87,7 @@ typedef void(*ScreenshotReadyCallback_t) (ScreenshotReady_t);
 typedef void(*UserStatsReceivedCallback_t) (UserStatsReceived_t);
 typedef void(*GlobalStatsReceivedCallback_t) (GlobalStatsReceived_t);
 typedef void(*DeleteItemResultCallback_t) (DeleteItemResult_t);
+typedef void(*DownloadItemResultCallback_t) (DownloadItemResult_t);
 //-----------------------------------------------
 // Workshop Class
 //-----------------------------------------------
@@ -194,6 +195,10 @@ public:
 		_pyDeleteItemResultCallback = callback;
 	}
 
+	void SetDownloadItemResultCallback(DownloadItemResultCallback_t callback) {
+		_pyDownloadItemResultCallback = callback;
+	}
+
 	void RequestGlobalStats(int nHistoryDays) {
 		const SteamAPICall_t hSteamAPICall = SteamUserStats()->RequestGlobalStats(nHistoryDays);
 		_RequestGlobalStatsCallResult.Set(hSteamAPICall, this, &SteamCallbacks::OnGlobalStatsReceived);
@@ -204,6 +209,10 @@ public:
 		_DeleteItemResult.Set(hSteamAPICall, this, &SteamCallbacks::OnItemDeleted);
 	}
 
+	bool DownloadItem(PublishedFileId_t nPublishedFileID, bool bHighPriority) {
+		return SteamUGC()->DownloadItem(nPublishedFileID, bHighPriority);
+	}
+
 private:
 	CCallResult< SteamCallbacks, GlobalStatsReceived_t > _RequestGlobalStatsCallResult;
 	CCallResult< SteamCallbacks, DeleteItemResult_t > _DeleteItemResult;
@@ -212,12 +221,14 @@ private:
 	STEAM_CALLBACK(SteamCallbacks, OnScreenshotReady, ScreenshotReady_t);
 	STEAM_CALLBACK(SteamCallbacks, OnUserStatsReceived, UserStatsReceived_t);
 	STEAM_CALLBACK(SteamCallbacks, OnUserStatsStored, UserStatsStored_t);
+	STEAM_CALLBACK(SteamCallbacks, OnItemDownloaded, DownloadItemResult_t);
 
 	GameOverlayActivatedCallback_t _pyGameOverlayActivatedCallback = nullptr;
 	ScreenshotReadyCallback_t _pyScreenshotReadyCallback = nullptr;
 	UserStatsReceivedCallback_t _pyUserStatsReceivedCallback = nullptr;
 	GlobalStatsReceivedCallback_t _pyGlobalStatsReceivedCallback = nullptr;
 	DeleteItemResultCallback_t _pyDeleteItemResultCallback = nullptr;
+	DownloadItemResultCallback_t _pyDownloadItemResultCallback = nullptr;
 
 	void OnGlobalStatsReceived(GlobalStatsReceived_t *pCallback, bool bIOFailure) {
 		if (_pyGlobalStatsReceivedCallback != nullptr && !bIOFailure && pCallback->m_eResult == k_EResultOK && SteamUtils()->GetAppID() == pCallback->m_nGameID) {
@@ -263,6 +274,12 @@ void SteamCallbacks::OnUserStatsStored(UserStatsStored_t *pCallback) {
   }
 }
 
+void SteamCallbacks::OnItemDownloaded(DownloadItemResult_t *pCallback) {
+	if (_pyDownloadItemResultCallback != nullptr && pCallback->m_unAppID == SteamUtils()->GetAppID() && pCallback->m_eResult == k_EResultOK) {
+		_pyDownloadItemResultCallback(*pCallback);
+	}
+}
+
 static SteamCallbacks callbacks;
 
 
@@ -286,6 +303,12 @@ SW_PY void Workshop_DeleteItem(PublishedFileId_t nPublishedFileID) {
 }
 SW_PY void Workshop_SetDeleteItemResultCallback(DeleteItemResultCallback_t callback) {
 	callbacks.SetDeleteItemResultCallback(callback);
+}
+SW_PY void Workshop_DownloadItem(PublishedFileId_t nPublishedFileID, bool bHighPriority) {
+	callbacks.DownloadItem(nPublishedFileID, bHighPriority);
+}
+SW_PY void Workshop_SetDownloadItemResultCallback(DownloadItemResultCallback_t callback) {
+	callbacks.SetDownloadItemResultCallback(callback);
 }
 
 
