@@ -335,12 +335,6 @@ SW_PY bool IsDlcInstalled(int32 value){
 	}
 	return SteamApps()->BIsDlcInstalled(value);
 }
-SW_PY void RequestAppProofOfPurchaseKey(int32 value){
-	if(SteamApps() == NULL){
-		return;
-	}
-	return SteamApps()->RequestAppProofOfPurchaseKey(value);
-}
 SW_PY bool IsAppInstalled(int32 value){
 	if(SteamApps() == NULL){
 		return false;
@@ -422,33 +416,33 @@ SW_PY void ActivateGameOverlay(const char* name){
 	if(SteamFriends() == NULL){
 		return;
 	}
-	return SteamFriends()->ActivateGameOverlay(name);	
+	SteamFriends()->ActivateGameOverlay(name);	
 }
 SW_PY void ActivateGameOverlayToUser(const char* url, int steamID){
 	if(SteamFriends() == NULL){
 		return;
 	}
 	CSteamID overlayUserID = CreateSteamID(steamID, 1);
-	return SteamFriends()->ActivateGameOverlayToUser(url, overlayUserID);
+	SteamFriends()->ActivateGameOverlayToUser(url, overlayUserID);
 }
 SW_PY void ActivateGameOverlayToWebPage(const char* url){
 	if(SteamFriends() == NULL){
 		return;
 	}
-	return SteamFriends()->ActivateGameOverlayToWebPage(url);
+	SteamFriends()->ActivateGameOverlayToWebPage(url);
 }
 SW_PY void ActivateGameOverlayToStore(int app_id){
 	if(SteamFriends() == NULL){
 		return;
 	}
-	return SteamFriends()->ActivateGameOverlayToStore(AppId_t(app_id), EOverlayToStoreFlag(0));
+	SteamFriends()->ActivateGameOverlayToStore(AppId_t(app_id), EOverlayToStoreFlag(0));
 }
 SW_PY void ActivateGameOverlayInviteDialog(int steamID){
 	if(SteamFriends() == NULL){
 		return;
 	}
 	CSteamID lobbyID = CreateSteamID(steamID, 1);
-	return SteamFriends()->ActivateGameOverlayInviteDialog(lobbyID);
+	SteamFriends()->ActivateGameOverlayInviteDialog(lobbyID);
 }
 //-----------------------------------------------
 // Steam Matchmaking
