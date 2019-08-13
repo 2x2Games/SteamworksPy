@@ -84,8 +84,9 @@ typedef void(*ItemInstalledCallback_t) (ItemInstalled_t);
 typedef void(*LeaderboardFindResultCallback_t) (LeaderboardFindResult_t);
 typedef void(*GameOverlayActivatedCallback_t) (GameOverlayActivated_t);
 typedef void(*ScreenshotReadyCallback_t) (ScreenshotReady_t);
-typedef void(*UserStatsReceivedCallback_t) (UserStatsReceived_t); 
+typedef void(*UserStatsReceivedCallback_t) (UserStatsReceived_t);
 typedef void(*GlobalStatsReceivedCallback_t) (GlobalStatsReceived_t);
+typedef void(*DeleteItemResultCallback_t) (DeleteItemResult_t);
 //-----------------------------------------------
 // Workshop Class
 //-----------------------------------------------
@@ -189,29 +190,45 @@ public:
 		_pyGlobalStatsReceivedCallback = callback;
 	}
 
+	void SetDeleteItemResultCallback(DeleteItemResultCallback_t callback) {
+		_pyDeleteItemResultCallback = callback;
+	}
+
 	void RequestGlobalStats(int nHistoryDays) {
 		const SteamAPICall_t hSteamAPICall = SteamUserStats()->RequestGlobalStats(nHistoryDays);
-		m_RequestGlobalStatsCallResult.Set(hSteamAPICall, this, &SteamCallbacks::OnGlobalStatsReceived);
+		_RequestGlobalStatsCallResult.Set(hSteamAPICall, this, &SteamCallbacks::OnGlobalStatsReceived);
+	}
+
+	void DeleteItem(PublishedFileId_t nPublishedFileID) {
+		const SteamAPICall_t hSteamAPICall = SteamUGC()->DeleteItem(nPublishedFileID);
+		_DeleteItemResult.Set(hSteamAPICall, this, &SteamCallbacks::OnItemDeleted);
 	}
 
 private:
-	CCallResult< SteamCallbacks, GlobalStatsReceived_t > m_RequestGlobalStatsCallResult;
+	CCallResult< SteamCallbacks, GlobalStatsReceived_t > _RequestGlobalStatsCallResult;
+	CCallResult< SteamCallbacks, DeleteItemResult_t > _DeleteItemResult;
 
-  STEAM_CALLBACK(SteamCallbacks, OnGameOverlayActivated, GameOverlayActivated_t);
-  STEAM_CALLBACK(SteamCallbacks, OnScreenshotReady, ScreenshotReady_t);
-  STEAM_CALLBACK(SteamCallbacks, OnUserStatsReceived, UserStatsReceived_t);
-  STEAM_CALLBACK(SteamCallbacks, OnUserStatsStored, UserStatsStored_t);
+	STEAM_CALLBACK(SteamCallbacks, OnGameOverlayActivated, GameOverlayActivated_t);
+	STEAM_CALLBACK(SteamCallbacks, OnScreenshotReady, ScreenshotReady_t);
+	STEAM_CALLBACK(SteamCallbacks, OnUserStatsReceived, UserStatsReceived_t);
+	STEAM_CALLBACK(SteamCallbacks, OnUserStatsStored, UserStatsStored_t);
 
 	GameOverlayActivatedCallback_t _pyGameOverlayActivatedCallback = nullptr;
 	ScreenshotReadyCallback_t _pyScreenshotReadyCallback = nullptr;
 	UserStatsReceivedCallback_t _pyUserStatsReceivedCallback = nullptr;
 	GlobalStatsReceivedCallback_t _pyGlobalStatsReceivedCallback = nullptr;
+	DeleteItemResultCallback_t _pyDeleteItemResultCallback = nullptr;
 
 	void OnGlobalStatsReceived(GlobalStatsReceived_t *pCallback, bool bIOFailure) {
 		if (_pyGlobalStatsReceivedCallback != nullptr && !bIOFailure && pCallback->m_eResult == k_EResultOK && SteamUtils()->GetAppID() == pCallback->m_nGameID) {
-      _pyGlobalStatsReceivedCallback(*pCallback);
+			_pyGlobalStatsReceivedCallback(*pCallback);
 		}
+	}
 
+	void OnItemDeleted(DeleteItemResult_t *pCallback, bool bIOFailure) {
+		if (_pyDeleteItemResultCallback != nullptr && !bIOFailure && pCallback->m_eResult == k_EResultOK) {
+			_pyDeleteItemResultCallback(*pCallback);
+		}
 	}
 };
 
@@ -264,6 +281,13 @@ SW_PY void Callbacks_SetGlobalStatsReceivedCallback(GlobalStatsReceivedCallback_
 SW_PY void Stats_RequestGlobalStats(int nHistoryDays) {
 	callbacks.RequestGlobalStats(nHistoryDays);
 }
+SW_PY void Workshop_DeleteItem(PublishedFileId_t nPublishedFileID) {
+	callbacks.DeleteItem(nPublishedFileID);
+}
+SW_PY void Workshop_SetDeleteItemResultCallback(DeleteItemResultCallback_t callback) {
+	callbacks.SetDeleteItemResultCallback(callback);
+}
+
 
 //-----------------------------------------------
 // Steamworks functions

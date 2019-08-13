@@ -825,6 +825,12 @@ class SteamWorkshop:
             ("appId", c_uint32),
             ("publishedFileId", c_uint64)
         ]
+    # A class that describes Steam's DeleteItemResult_t C struct
+    class DeleteItemResult_t(Structure):
+        _fields_ = [
+            ("result", c_uint32),
+            ("published_file_id", c_uint64)
+        ]
     # We want to keep callbacks in the class scope, so that they don't get
     # garbage collected while we still need them.
     ITEM_CREATED_CALLBACK_TYPE = CFUNCTYPE(None, CreateItemResult_t)
@@ -835,6 +841,9 @@ class SteamWorkshop:
 
     ITEM_INSTALLED_CALLBACK_TYPE = CFUNCTYPE(None, ItemInstalled_t)
     itemInstalledCallback = None
+
+    ITEM_DELETED_CALLBACK_TYPE = CFUNCTYPE(None, DeleteItemResult_t)
+    itemDeletedCallback = None
     #
     @classmethod
     def SetItemCreatedCallback(cls, callback):
@@ -866,8 +875,17 @@ class SteamWorkshop:
     @classmethod
     def ClearItemInstalledCallback(cls, callback):
         if Steam.isSteamLoaded():
-            itemInstalledCallback = None
+            cls.itemInstalledCallback = None
             Steam.cdll.Workshop_ClearItemInstalledCallback()
+    #
+    @classmethod
+    def SetDeleteItemResultCallback(cls, callback):
+        if Steam.isSteamLoaded():
+            cls.itemDeletedCallback = cls.ITEM_DELETED_CALLBACK_TYPE(callback)
+            Steam.cdll.Workshop_SetDeleteItemResultCallback(cls.itemInstalledCallback)
+        else:
+            return False
+    #
     # Create a UGC (Workshop) item
     #
     # Arguments:
