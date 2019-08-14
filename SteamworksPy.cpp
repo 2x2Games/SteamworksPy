@@ -128,12 +128,12 @@ public:
 	}
 private:
 	void OnWorkshopItemCreated(CreateItemResult_t *createItemResult, bool bIOFailure) {
-		if(_pyItemCreatedCallback != nullptr && !bIOFailure && createItemResult->m_eResult == k_EResultOK) {
+		if(_pyItemCreatedCallback != nullptr && !bIOFailure) {
 			_pyItemCreatedCallback(*createItemResult);
 		}
 	}
 	void OnItemUpdateSubmitted(SubmitItemUpdateResult_t *submitItemUpdateResult, bool bIOFailure) {
-		if(_pyItemUpdatedCallback != nullptr && !bIOFailure && submitItemUpdateResult->m_eResult == k_EResultOK) {
+		if(_pyItemUpdatedCallback != nullptr && !bIOFailure) {
 			_pyItemUpdatedCallback(*submitItemUpdateResult);
 		}
 	}
@@ -821,11 +821,11 @@ SW_PY bool Workshop_SetItemMetadata(UGCUpdateHandle_t updateHandle, const char *
 	}
 	return SteamUGC()->SetItemMetadata(updateHandle, pMetadata);
 }
-SW_PY bool Workshop_SetItemVisibility(UGCUpdateHandle_t updateHandle, ERemoteStoragePublishedFileVisibility visibility){
+SW_PY bool Workshop_SetItemVisibility(UGCUpdateHandle_t updateHandle, int visibility){
 	if(SteamUGC() == NULL){
 		return false;
 	}
-	return SteamUGC()->SetItemVisibility(updateHandle, visibility);
+	return SteamUGC()->SetItemVisibility(updateHandle, static_cast<ERemoteStoragePublishedFileVisibility>(visibility));
 }
 
 SW_PY bool Workshop_SetItemTags(UGCUpdateHandle_t updateHandle, const char ** stringArray, const int32 stringCount){
@@ -859,8 +859,8 @@ SW_PY void Workshop_SubmitItemUpdate(UGCUpdateHandle_t updateHandle, const char 
 	}
 	workshop.SubmitItemUpdate(updateHandle, pChangeNote);
 }
-SW_PY EItemUpdateStatus Workshop_GetItemUpdateProgress(UGCUpdateHandle_t handle, uint64 *punBytesProcessed, uint64* punBytesTotal){
-	return SteamUGC()->GetItemUpdateProgress(handle, punBytesProcessed, punBytesTotal);
+SW_PY int Workshop_GetItemUpdateProgress(UGCUpdateHandle_t handle, uint64 *punBytesProcessed, uint64* punBytesTotal){
+	return static_cast<int>(SteamUGC()->GetItemUpdateProgress(handle, punBytesProcessed, punBytesTotal));;
 }
 SW_PY uint32 Workshop_GetNumSubscribedItems(){if(SteamUGC() == NULL){
 		return 0;

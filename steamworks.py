@@ -182,6 +182,7 @@ class Steam:
         Steam.cdll.Workshop_SetItemUpdateLanguage.restype = bool
         Steam.cdll.Workshop_SetItemMetadata.restype = bool
         Steam.cdll.Workshop_SetItemVisibility.restype = bool
+        Steam.cdll.Workshop_SetItemVisibility.argtypes = [c_uint64, c_int]
         Steam.cdll.Workshop_SetItemTags.restype = bool
         Steam.cdll.Workshop_SetItemContent.restype = bool
         Steam.cdll.Workshop_SetItemContent.argtypes = [c_uint64, c_char_p]
@@ -197,6 +198,8 @@ class Steam:
         Steam.cdll.Workshop_GetItemInstallInfo.argtypes = [c_uint64, POINTER(c_uint64), c_char_p, c_uint32,  POINTER(c_uint32)]
         Steam.cdll.Workshop_GetItemDownloadInfo.restype = bool
         Steam.cdll.Workshop_GetItemDownloadInfo.argtypes = [c_uint64, POINTER(c_uint64), POINTER(c_uint64)]
+        Steam.cdll.Workshop_GetItemUpdateProgress.restype = c_int
+        Steam.cdll.Workshop_GetItemUpdateProgress.argtypes = [c_uint64, POINTER(c_uint64), POINTER(c_uint64)]
     # Is Steam loaded
     @staticmethod
     def isSteamLoaded():
@@ -735,7 +738,8 @@ class SteamWorkshop:
     class SubmitItemUpdateResult_t(Structure):
         _fields_ = [
             ("result", c_int),
-            ("legal_accept_needed", c_bool)
+            ("legal_accept_needed", c_bool),
+            ("published_file_id", c_uint64),
         ]
     # A class that describes Steam's ItemInstalled_t C struct
     class ItemInstalled_t(Structure):
@@ -832,7 +836,7 @@ class SteamWorkshop:
     #
     # callback -- The function to call once the item creation is finished.
     @staticmethod
-    def CreateItem(appId, filetype, callback = None):
+    def CreateItem(appId, filetype, callback=None):
         if Steam.isSteamLoaded():
             if callback != None:
                 SteamWorkshop.SetItemCreatedCallback(callback)
@@ -915,23 +919,27 @@ class SteamWorkshop:
     # Return value:
     # True on succes,
     # False otherwise.
+    #
     @staticmethod
-    def SetItemPreview(updateHandle, previewImage):
+    def SetItemVisibility(updateHandle, visibility):
         if Steam.isSteamLoaded():
-            return Steam.cdll.Workshop_SetItemPreview(updateHandle, previewImage.encode())
+            return Steam.cdll.Workshop_SetItemVisibility(updateHandle, visibility)
         return False
+    #
     # Submit the item update with the given handle to Steam.
     #
     # Arguments:
     # updateHandle -- the handle returned by 'StartItemUpdate'
     # changeNote -- a string containing change notes for the current update.
     @staticmethod
-    def SubmitItemUpdate(updateHandle, changeNote, callback = None):
+    def SubmitItemUpdate(updateHandle, changeNote="", callback=None):
         if Steam.isSteamLoaded():
             if callback != None:
                 SteamWorkshop.SetItemUpdatedCallback(callback)
 
-            return Steam.cdll.Workshop_SubmitItemUpdate(updateHandle, changeNote.encode())
+            changeNote = changeNote.encode() if changeNote else c_char_p(0)
+            Steam.cdll.Workshop_SubmitItemUpdate(updateHandle, changeNote)
+            return True
         return False
     # Get the progress of an item update request.
     #
@@ -948,21 +956,19 @@ class SteamWorkshop:
     @staticmethod
     def GetItemUpdateProgress(updateHandle):
         if Steam.isSteamLoaded():
-            pBytesProcessed = pointer(c_uint64)
-            pBytesTotal = pointer(c_uint64)
+            pBytesProcessed = pointer(c_uint64(0))
+            pBytesTotal = pointer(c_uint64(0))
 
-            itemUpdateStatus = Workshop_GetItemUpdateProgress(updateHandle, pBytesProcessed, pBytesTotal)
+            itemUpdateStatus = Steam.cdll.Workshop_GetItemUpdateProgress(updateHandle, pBytesProcessed, pBytesTotal)
             # Unlike for GetItemDownloadInfo, pBytesTotal should always be set here
-            progress = pBytesProcessed.contents.value / pBytesTotal.contents.value
+            progress = pBytesProcessed.contents.value / pBytesTotal.contents.value if pBytesTotal.contents.value else 0
 
-            itemUpdateInfo = {
-                'itemUpdateStatus' : itemUpdateStatus,
-                'bytesProcessed' : pBytesProcessed.contents.value,
-                'bytesTotal' : pBytesTotal.contents.value,
-                'progress' : progress
-            }
-
-            return itemUpdateInfo
+            return SimpleNamespace(
+                item_update_status=itemUpdateStatus,
+                bytes_processed=pBytesProcessed.contents.value,
+                bytes_total=pBytesTotal.contents.value,
+                progress=progress
+            )
         return False
     # Get the total number of items the user is subscribed to for this game or application.
     #
