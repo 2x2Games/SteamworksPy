@@ -1076,8 +1076,12 @@ class SteamWorkshop:
             if downloadInfoAvailable:
                 bytesDownloaded = pBytesDownloaded.contents.value
                 bytesTotal = pBytesTotal.contents.value
+                progress = 0
+                if bytesTotal > 0 and bytesDownloaded > 0:
+                    progress = bytesDownloaded / bytesTotal
                 downloadInfo = SimpleNamespace(
                     bytes_downloaded=bytesDownloaded,
-                    bytes_total=bytesTotal)
+                    bytes_total=bytesTotal,
+                    progress=progress)
                 return downloadInfo
         return False

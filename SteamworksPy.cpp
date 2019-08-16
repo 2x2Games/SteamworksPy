@@ -862,10 +862,11 @@ SW_PY void Workshop_SubmitItemUpdate(UGCUpdateHandle_t updateHandle, const char 
 SW_PY int Workshop_GetItemUpdateProgress(UGCUpdateHandle_t handle, uint64 *punBytesProcessed, uint64* punBytesTotal){
 	return static_cast<int>(SteamUGC()->GetItemUpdateProgress(handle, punBytesProcessed, punBytesTotal));;
 }
-SW_PY uint32 Workshop_GetNumSubscribedItems(){if(SteamUGC() == NULL){
-		return 0;
-	}
-	return SteamUGC()->GetNumSubscribedItems();
+SW_PY uint32 Workshop_GetNumSubscribedItems() {
+  if(SteamUGC() == NULL){
+    return 0;
+  }
+  return SteamUGC()->GetNumSubscribedItems();
 }
 SW_PY uint32 Workshop_GetSubscribedItems(PublishedFileId_t* pvecPublishedFileID, uint32 maxEntries){
 	if(SteamUGC() == NULL){
