@@ -304,8 +304,8 @@ SW_PY void Workshop_DeleteItem(PublishedFileId_t nPublishedFileID) {
 SW_PY void Workshop_SetDeleteItemResultCallback(DeleteItemResultCallback_t callback) {
 	callbacks.SetDeleteItemResultCallback(callback);
 }
-SW_PY void Workshop_DownloadItem(PublishedFileId_t nPublishedFileID, bool bHighPriority) {
-	callbacks.DownloadItem(nPublishedFileID, bHighPriority);
+SW_PY bool Workshop_DownloadItem(PublishedFileId_t nPublishedFileID, bool bHighPriority) {
+	return callbacks.DownloadItem(nPublishedFileID, bHighPriority);
 }
 SW_PY void Workshop_SetDownloadItemResultCallback(DownloadItemResultCallback_t callback) {
 	callbacks.SetDownloadItemResultCallback(callback);

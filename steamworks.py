@@ -818,6 +818,12 @@ class SteamWorkshop:
         return False
     #
     @classmethod
+    def DownloadItem(cls, publishedFileId, highPriority):
+        if Steam.isSteamLoaded():
+            return Steam.cdll.Workshop_DownloadItem(publishedFileId, highPriority)
+        return False
+    #
+    @classmethod
     def SetDownloadItemResultCallback(cls, callback):
         if Steam.isSteamLoaded():
             cls.itemDownloadedCallback = cls.ITEM_DOWNLOADED_CALLBACK_TYPE(callback)
