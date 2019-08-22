@@ -88,6 +88,7 @@ typedef void(*UserStatsReceivedCallback_t) (UserStatsReceived_t);
 typedef void(*GlobalStatsReceivedCallback_t) (GlobalStatsReceived_t);
 typedef void(*DeleteItemResultCallback_t) (DeleteItemResult_t);
 typedef void(*DownloadItemResultCallback_t) (DownloadItemResult_t);
+typedef void(*SteamUGCDetailsCallback_t) (SteamUGCDetails_t);
 //-----------------------------------------------
 // Workshop Class
 //-----------------------------------------------
@@ -97,9 +98,11 @@ public:
 	CreateItemResultCallback_t _pyItemCreatedCallback;
 	SubmitItemUpdateResultCallback_t _pyItemUpdatedCallback;
 	ItemInstalledCallback_t _pyItemInstalledCallback;
+	SteamUGCDetailsCallback_t _pySteamUGCDetailsCallback;
 
 	CCallResult<Workshop, CreateItemResult_t> _itemCreatedCallback;
 	CCallResult<Workshop, SubmitItemUpdateResult_t> _itemUpdatedCallback;
+	CCallResult<Workshop, SteamUGCQueryCompleted_t> _queryCompletedCallback;
 
 	CCallback<Workshop, ItemInstalled_t> _itemInstalledCallback;
 
@@ -111,21 +114,37 @@ public:
 	void SetItemUpdatedCallback(SubmitItemUpdateResultCallback_t callback){
 		_pyItemUpdatedCallback = callback;
 	}
+
 	void SetItemInstalledCallback(ItemInstalledCallback_t callback){
 		_pyItemInstalledCallback = callback;
 	}
 	void ClearItemInstallCallback(){
 		_pyItemInstalledCallback = nullptr;
 	}
+
+	void SetSteamUGCDetailsCallback(SteamUGCDetailsCallback_t callback) {
+		_pySteamUGCDetailsCallback = callback;
+	}
+	void ClearSteamUGCDetailsCallback() {
+		_pySteamUGCDetailsCallback = nullptr;
+	}
+
 	void CreateItem(AppId_t consumerAppId, EWorkshopFileType fileType){
 		//TODO: Check if fileType is a valid value?
-		SteamAPICall_t createItemCall = SteamUGC()->CreateItem(consumerAppId, fileType);
+		const SteamAPICall_t createItemCall = SteamUGC()->CreateItem(consumerAppId, fileType);
 		_itemCreatedCallback.Set(createItemCall, this, &Workshop::OnWorkshopItemCreated);
 	}
 	void SubmitItemUpdate(UGCUpdateHandle_t updateHandle, const char *pChangeNote){
-		SteamAPICall_t submitItemUpdateCall = SteamUGC()->SubmitItemUpdate(updateHandle, pChangeNote);
+		const SteamAPICall_t submitItemUpdateCall = SteamUGC()->SubmitItemUpdate(updateHandle, pChangeNote);
 		_itemUpdatedCallback.Set(submitItemUpdateCall, this, &Workshop::OnItemUpdateSubmitted);
 	}
+
+	void QueryUGCItem(PublishedFileId_t nPublishedFileID) {
+		const UGCQueryHandle_t handle = SteamUGC()->CreateQueryUGCDetailsRequest(&nPublishedFileID, 1);
+		const SteamAPICall_t sendQueryCall = SteamUGC()->SendQueryUGCRequest(handle);
+		_queryCompletedCallback.Set(sendQueryCall, this, &Workshop::OnSteamUGCQueryCompleted);
+	}
+
 private:
 	void OnWorkshopItemCreated(CreateItemResult_t *createItemResult, bool bIOFailure) {
 		if(_pyItemCreatedCallback != nullptr && !bIOFailure) {
@@ -142,7 +161,19 @@ private:
 			_pyItemInstalledCallback(*itemInstalledResult);
 		}
 	}
+	void OnSteamUGCQueryCompleted(SteamUGCQueryCompleted_t *pCallback, bool bIOFailure) {
+		if (pCallback->m_eResult == k_EResultOK && !bIOFailure) {
+			SteamUGCDetails_t details;
+			if (SteamUGC()->GetQueryUGCResult(pCallback->m_handle, 0, &details)) {
+				_pySteamUGCDetailsCallback(details);
+			}
+		}
+
+		ClearSteamUGCDetailsCallback();
+		SteamUGC()->ReleaseQueryUGCRequest(pCallback->m_handle);
+	}
 };
+
 static Workshop workshop;
 //-----------------------------------------------
 // Leaderboard Class
@@ -783,6 +814,12 @@ SW_PY void Workshop_CreateItem(AppId_t consumerAppId, EWorkshopFileType fileType
 	}
 	workshop.CreateItem(consumerAppId, fileType);
 }
+SW_PY void Workshop_QueryUGCItem(PublishedFileId_t nPublishedFileID) {
+	if (SteamUGC() == NULL) {
+		return;
+	}
+	workshop.QueryUGCItem(nPublishedFileID);
+}
 SW_PY UGCUpdateHandle_t Workshop_StartItemUpdate(AppId_t consumerAppId, PublishedFileId_t publishedFileId){
 	return SteamUGC()->StartItemUpdate(consumerAppId, publishedFileId);
 }
@@ -892,6 +929,20 @@ SW_PY void Workshop_ClearItemInstalledCallback(){
 	}
 	workshop.ClearItemInstallCallback();
 }
+
+SW_PY void Workshop_SetSteamUGCDetailsCallback(SteamUGCDetailsCallback_t callback) {
+	if (SteamUGC() == NULL) {
+		return;
+	}
+	workshop.SetSteamUGCDetailsCallback(callback);
+}
+SW_PY void Workshop_ClearSteamUGCDetailsCallback() {
+	if (SteamUGC() == NULL) {
+		return;
+	}
+	workshop.ClearSteamUGCDetailsCallback();
+}
+
 SW_PY bool Workshop_GetItemInstallInfo(PublishedFileId_t nPublishedFileID, uint64 *punSizeOnDisk, char *pchFolder, uint32 cchFolderSize, uint32 *punTimeStamp){
 	if(SteamUGC() == NULL){
 		return false;

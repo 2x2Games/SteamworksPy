@@ -200,6 +200,8 @@ class Steam:
         Steam.cdll.Workshop_GetItemDownloadInfo.argtypes = [c_uint64, POINTER(c_uint64), POINTER(c_uint64)]
         Steam.cdll.Workshop_GetItemUpdateProgress.restype = c_int
         Steam.cdll.Workshop_GetItemUpdateProgress.argtypes = [c_uint64, POINTER(c_uint64), POINTER(c_uint64)]
+        Steam.cdll.Workshop_DownloadItem.restype = bool
+        Steam.cdll.Workshop_DownloadItem.argtypes = [c_uint64, c_bool]
     # Is Steam loaded
     @staticmethod
     def isSteamLoaded():
@@ -652,7 +654,7 @@ class SteamUserStats:
     @staticmethod
     def FindLeaderboard(name, callback = None):
         if Steam.isSteamLoaded():
-            if callback != None:
+            if callback is not None:
                 SteamUserStats.SetFindLeaderboardResultCallback(callback)
 
             Steam.cdll.Leaderboard_FindLeaderboard(name.encode())
@@ -760,6 +762,36 @@ class SteamWorkshop:
             ("published_file_id", c_uint64),
             ("result", c_uint32),
         ]
+    # A class that describes Steam's SteamUGCDetails_t C struct
+    class SteamUGCDetails_t(Structure):
+        _fields_ = [
+            ("published_file_id", c_uint64),
+            ("result", c_uint32),
+            ("file_type", c_uint32),
+            ("creator_app_id", c_uint32),
+            ("consumer_app_id", c_uint32),
+            ("title", c_char * 129),
+            ("description", c_char * 8000),
+            ("steam_owner_id", c_uint64),
+            ("time_created", c_uint32),
+            ("time_updated", c_uint32),
+            ("time_added_to_user_list", c_uint32),
+            ("visibility", c_uint32),
+            ("banned", c_bool),
+            ("accepted_for_use", c_bool),
+            ("tags_truncated", c_bool),
+            ("tags", c_char * 1025),
+            ("file", c_uint64),
+            ("preview_file", c_uint64),
+            ("file_name", c_char * 260),
+            ("file_size", c_int32),
+            ("preview_file_size", c_int32),
+            ("url", c_char * 256),
+            ("votes_up", c_uint32),
+            ("voted_down", c_uint32),
+            ("score", c_float),
+            ("num_children", c_uint32),
+        ]
     # We want to keep callbacks in the class scope, so that they don't get
     # garbage collected while we still need them.
     ITEM_CREATED_CALLBACK_TYPE = CFUNCTYPE(None, CreateItemResult_t)
@@ -776,12 +808,31 @@ class SteamWorkshop:
 
     ITEM_DOWNLOADED_CALLBACK_TYPE = CFUNCTYPE(None, DownloadItemResult_t)
     itemDownloadedCallback = None
+
+    QUERY_UGC_ITEM_CALLBACK_TYPE = CFUNCTYPE(None, SteamUGCDetails_t)
+    queryUGCItemCallback = None
     #
     @classmethod
     def SetItemCreatedCallback(cls, callback):
         if Steam.isSteamLoaded():
             cls.itemCreatedCallback = cls.ITEM_CREATED_CALLBACK_TYPE(callback)
             Steam.cdll.Workshop_SetItemCreatedCallback(cls.itemCreatedCallback)
+            return True
+        return False
+    #
+    @classmethod
+    def SetQueryUGCItemCallback(cls, callback):
+        if Steam.isSteamLoaded():
+            cls.queryUGCItemCallback = cls.QUERY_UGC_ITEM_CALLBACK_TYPE(callback)
+            Steam.cdll.Workshop_SetSteamUGCDetailsCallback(cls.queryUGCItemCallback)
+            return True
+        return False
+    #
+    @classmethod
+    def ClearSteamUGCDetailsCallback(cls):
+        if Steam.isSteamLoaded():
+            cls.queryUGCItemCallback = None
+            Steam.cdll.Workshop_ClearSteamUGCDetailsCallback()
             return True
         return False
     #
@@ -844,10 +895,18 @@ class SteamWorkshop:
     @staticmethod
     def CreateItem(appId, filetype, callback=None):
         if Steam.isSteamLoaded():
-            if callback != None:
+            if callback is not None:
                 SteamWorkshop.SetItemCreatedCallback(callback)
 
             Steam.cdll.Workshop_CreateItem(appId, filetype)
+            return True
+        return False
+    #
+    @staticmethod
+    def QueryUGCItem(nPublishedFileID, callback):
+        if Steam.isSteamLoaded():
+            SteamWorkshop.SetQueryUGCItemCallback(callback)
+            Steam.cdll.Workshop_QueryUGCItem(nPublishedFileID)
             return True
         return False
     # Start the item update process and receive an update handle.
@@ -940,7 +999,7 @@ class SteamWorkshop:
     @staticmethod
     def SubmitItemUpdate(updateHandle, changeNote="", callback=None):
         if Steam.isSteamLoaded():
-            if callback != None:
+            if callback is not None:
                 SteamWorkshop.SetItemUpdatedCallback(callback)
 
             changeNote = changeNote.encode() if changeNote else c_char_p(0)
