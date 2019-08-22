@@ -106,8 +106,8 @@ class Steam:
         Steam.cdll.GetPersonaState.restype = int
         Steam.cdll.GetFriendPersonaName.restype = c_char_p
         Steam.cdll.GetFriendPersonaName.argtypes = [c_uint64]
-        Steam.cdll.SetGameInfo.restype = None
-        Steam.cdll.ClearGameInfo.restype = None
+        Steam.cdll.SetRichPresence.restype = c_bool
+        Steam.cdll.ClearRichPresence.restype = None
         Steam.cdll.InviteFriend.restype = None
         Steam.cdll.SetPlayedWith.restype = None
         Steam.cdll.ActivateGameOverlay.restype = None
@@ -291,16 +291,15 @@ class SteamFriends:
         return ""
     # Set the game information in Steam; used in 'View Game Info'
     @staticmethod
-    def SetGameInfo(serverKey, serverValue):
+    def SetRichPresence(serverKey, serverValue):
         if Steam.isSteamLoaded():
-            Steam.cdll.SetGameInfo(serverKey, serverValue)
-            return True
+            return Steam.cdll.SetRichPresence(serverKey, serverValue)
         return False
     # Clear the game information in Steam; used in 'View Game Info'
     @staticmethod
-    def ClearGameInfo():
+    def ClearRichPresence():
         if Steam.isSteamLoaded():
-            Steam.cdll.ClearGameInfo()
+            Steam.cdll.ClearRichPresence()
             return True
         return False
     # Invite friend to current game/lobby

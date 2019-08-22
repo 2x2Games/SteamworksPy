@@ -437,13 +437,13 @@ SW_PY const char* GetFriendPersonaName(int steamID){
 	}
 	return "";
 }
-SW_PY void SetGameInfo(const char* serverKey, const char* serverValue){
+SW_PY bool SetRichPresence(const char *serverKey, const char *serverValue){
 	if(SteamFriends() == NULL){
-		return;
+		return false;
 	}
-	SteamFriends()->SetRichPresence(serverKey, serverValue);
+	return SteamFriends()->SetRichPresence(serverKey, serverValue);
 }
-SW_PY void ClearGameInfo(){
+SW_PY void ClearRichPresence(){
 	if(SteamFriends() == NULL){
 		return;
 	}
