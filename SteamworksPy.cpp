@@ -869,7 +869,7 @@ SW_PY bool Workshop_SetItemTags(UGCUpdateHandle_t updateHandle, const char ** st
 	if(SteamUGC() == NULL){
 		return false;
 	}
-	SteamParamStringArray_t tags = { stringArray, stringCount };	
+	const SteamParamStringArray_t tags = { stringArray, stringCount };	
 	return SteamUGC()->SetItemTags(updateHandle, &tags);
 }
 SW_PY bool Workshop_SetItemContent(UGCUpdateHandle_t updateHandle, const char *pContentFolder){

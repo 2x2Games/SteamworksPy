@@ -52,7 +52,6 @@ class Steam:
     # Set some basic variables for the Steam class
     cdll = None
     warn = False
-    loaded = False
     # Initialize Steam
     @staticmethod
     def Init(dynamicLibDir):
@@ -61,18 +60,15 @@ class Steam:
         if sys.platform == 'linux' or sys.platform == 'linux2':
             Steam.cdll = CDLL(os.path.join(dynamicLibDir, "SteamworksPy.so"))
             logger.info("SteamworksPy loaded for Linux")
-            Steam.loaded = True
         # Loading SteamworksPy API for Mac
         elif sys.platform == 'darwin':
             Steam.cdll = CDLL(os.path.join(dynamicLibDir, "SteamworksPy.dylib" ))
             logger.info("SteamworksPy loaded for Mac")
-            Steam.loaded = True
         # Loading SteamworksPy API for Windows
         elif sys.platform == 'win32':
             # Check Windows architecture
             Steam.cdll = CDLL(os.path.join(dynamicLibDir, "SteamworksPy.dll"))
             logger.info("SteamworksPy loaded for Windows")
-            Steam.loaded = True
         # Unrecognized platform, warn user, do not load Steam API
         else:
             logger.error("SteamworksPy failed to load (unsupported platform!)")
@@ -89,7 +85,8 @@ class Steam:
         if Steam.cdll.SteamInit() == 1:
             logger.info("Steamworks initialized!")
         else:
-            logger.error("ERROR: Steamworks failed to initialize!")
+            logger.error("Steamworks failed to initialize!")
+            Steam.warn = True
         #----------------------------------------
         # Restypes and Argtypes
         #----------------------------------------
@@ -205,11 +202,7 @@ class Steam:
     # Is Steam loaded
     @staticmethod
     def isSteamLoaded():
-        if not Steam.cdll and not Steam.warn:
-            logger.warning("Steam is not loaded")
-            Steam.warn = True
-            return False
-        return True
+        return Steam.cdll and not Steam.warn
     # Running callbacks
     @staticmethod
     def RunCallbacks():
@@ -959,6 +952,15 @@ class SteamWorkshop:
                 return False
 
             return Steam.cdll.Workshop_SetItemDescription(updateHandle, description.encode())
+        return False
+    #
+    @staticmethod
+    def SetItemTags(updateHandle, *tags):
+        if Steam.isSteamLoaded():
+            arr = (c_char_p * len(tags))()
+            arr[:] = [t.encode("utf-8") for t in tags]
+            lib.external_C(len(L), arr)
+            return Steam.cdll.Workshop_SetItemTags(updateHandle, arr, len(tags))
         return False
     # Set the directory containing the content you wish to upload to Workshop.
     #
