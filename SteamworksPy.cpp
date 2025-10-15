@@ -745,6 +745,19 @@ SW_PY uint8 GetCurrentBatteryPower(){
 	}
 	return SteamUtils()->GetCurrentBatteryPower();
 }
+SW_PY bool GetEnteredGamepadTextInput(char* buffer, uint32 length){
+    if(SteamUtils() == NULL){
+        return false;
+    }
+
+    return SteamUtils()->GetEnteredGamepadTextInput(buffer, length);
+}
+SW_PY uint32 GetEnteredGamepadTextLength(){
+	if(SteamUtils() == NULL){
+		return 0;
+	}
+	return SteamUtils()->GetEnteredGamepadTextLength();
+}
 SW_PY const char* GetIPCountry(){
 	if(SteamUtils() == NULL){
 		return "None";
@@ -810,6 +823,26 @@ SW_PY void SetOverlayNotificationPosition(int pos){
 		return;
 	}
 	SteamUtils()->SetOverlayNotificationPosition(ENotificationPosition(pos));
+}
+SW_PY bool ShowGamepadTextInput(int inputMode, int lineInputMode, const char *description, uint32 maxText,
+                                const char *presetText) {
+    if (SteamUtils() == NULL) {
+        return false;
+    }
+    // Convert modes
+    EGamepadTextInputMode mode;
+    if (inputMode == 0) {
+        mode = k_EGamepadTextInputModeNormal;
+    } else {
+        mode = k_EGamepadTextInputModePassword;
+    }
+    EGamepadTextInputLineMode lineMode;
+    if (lineInputMode == 0) {
+        lineMode = k_EGamepadTextInputLineModeSingleLine;
+    } else {
+        lineMode = k_EGamepadTextInputLineModeMultipleLines;
+    }
+    return SteamUtils()->ShowGamepadTextInput(mode, lineMode, description, maxText, presetText);
 }
 //-----------------------------------------------
 // Steam Workshop
