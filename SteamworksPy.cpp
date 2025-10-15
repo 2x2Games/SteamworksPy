@@ -775,6 +775,12 @@ SW_PY bool IsOverlayEnabled(){
 	}
 	return SteamUtils()->IsOverlayEnabled();
 }
+SW_PY bool IsSteamInBigPictureMode() {
+    if (SteamUtils() == NULL) {
+        return false;
+    }
+    return SteamUtils()->IsSteamInBigPictureMode();
+}
 SW_PY bool IsSteamRunningInVR(){
 	if(SteamUtils() == NULL){
 		return false;
