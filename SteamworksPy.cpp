@@ -781,6 +781,12 @@ SW_PY bool IsSteamRunningInVR(){
 	}
 	return SteamUtils()->IsSteamRunningInVR();
 }
+SW_PY bool IsSteamRunningOnSteamDeck(){
+	if(SteamUtils() == NULL){
+		return false;
+	}
+	return SteamUtils()->IsSteamRunningOnSteamDeck();
+}
 SW_PY const char* GetSteamUILanguage(){
 	if(SteamUtils() == NULL){
 		return "None";
