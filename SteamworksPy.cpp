@@ -89,6 +89,7 @@ typedef void(*GlobalStatsReceivedCallback_t) (GlobalStatsReceived_t);
 typedef void(*DeleteItemResultCallback_t) (DeleteItemResult_t);
 typedef void(*DownloadItemResultCallback_t) (DownloadItemResult_t);
 typedef void(*SteamUGCDetailsCallback_t) (SteamUGCDetails_t);
+typedef void(*GamepadTextInputDismissedCallback_t) (GamepadTextInputDismissed_t);
 //-----------------------------------------------
 // Workshop Class
 //-----------------------------------------------
@@ -230,6 +231,10 @@ public:
 		_pyDownloadItemResultCallback = callback;
 	}
 
+	void SetGamepadTextInputDismissedCallback(GamepadTextInputDismissedCallback_t callback) {
+		_pyGamepadTextInputDismissedCallback = callback;
+	}
+
 	void RequestGlobalStats(int nHistoryDays) {
 		const SteamAPICall_t hSteamAPICall = SteamUserStats()->RequestGlobalStats(nHistoryDays);
 		_RequestGlobalStatsCallResult.Set(hSteamAPICall, this, &SteamCallbacks::OnGlobalStatsReceived);
@@ -253,6 +258,7 @@ private:
 	STEAM_CALLBACK(SteamCallbacks, OnUserStatsReceived, UserStatsReceived_t);
 	STEAM_CALLBACK(SteamCallbacks, OnUserStatsStored, UserStatsStored_t);
 	STEAM_CALLBACK(SteamCallbacks, OnItemDownloaded, DownloadItemResult_t);
+	STEAM_CALLBACK(SteamCallbacks, OnGamepadTextInputDismissed, GamepadTextInputDismissed_t);
 
 	GameOverlayActivatedCallback_t _pyGameOverlayActivatedCallback = nullptr;
 	ScreenshotReadyCallback_t _pyScreenshotReadyCallback = nullptr;
@@ -260,6 +266,7 @@ private:
 	GlobalStatsReceivedCallback_t _pyGlobalStatsReceivedCallback = nullptr;
 	DeleteItemResultCallback_t _pyDeleteItemResultCallback = nullptr;
 	DownloadItemResultCallback_t _pyDownloadItemResultCallback = nullptr;
+	GamepadTextInputDismissedCallback_t _pyGamepadTextInputDismissedCallback = nullptr;
 
 	void OnGlobalStatsReceived(GlobalStatsReceived_t *pCallback, bool bIOFailure) {
 		if (_pyGlobalStatsReceivedCallback != nullptr && !bIOFailure && pCallback->m_eResult == k_EResultOK && SteamUtils()->GetAppID() == pCallback->m_nGameID) {
@@ -311,6 +318,11 @@ void SteamCallbacks::OnItemDownloaded(DownloadItemResult_t *pCallback) {
 	}
 }
 
+void SteamCallbacks::OnGamepadTextInputDismissed(GamepadTextInputDismissed_t *pCallback) {
+	if (_pyGamepadTextInputDismissedCallback != nullptr && pCallback->m_bSubmitted) {
+		_pyGamepadTextInputDismissedCallback(*pCallback);
+	}
+}
 static SteamCallbacks callbacks;
 
 
@@ -340,6 +352,9 @@ SW_PY bool Workshop_DownloadItem(PublishedFileId_t nPublishedFileID, bool bHighP
 }
 SW_PY void Workshop_SetDownloadItemResultCallback(DownloadItemResultCallback_t callback) {
 	callbacks.SetDownloadItemResultCallback(callback);
+}
+SW_PY void Callbacks_GamepadTextInputDismissedCallback(GamepadTextInputDismissedCallback_t callback) {
+	callbacks.SetGamepadTextInputDismissedCallback(callback);
 }
 
 
