@@ -354,7 +354,7 @@ SW_PY bool Workshop_DownloadItem(PublishedFileId_t nPublishedFileID, bool bHighP
 SW_PY void Workshop_SetDownloadItemResultCallback(DownloadItemResultCallback_t callback) {
 	callbacks.SetDownloadItemResultCallback(callback);
 }
-SW_PY void Callbacks_GamepadTextInputDismissedCallback(GamepadTextInputDismissedCallback_t callback) {
+SW_PY void Callbacks_SetGamepadTextInputDismissedCallback(GamepadTextInputDismissedCallback_t callback) {
 	callbacks.SetGamepadTextInputDismissedCallback(callback);
 }
 
