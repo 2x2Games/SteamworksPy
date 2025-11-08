@@ -15,6 +15,7 @@
 	#define SW_PY extern "C" __attribute__ ((visibility("default")))
 #elif defined( __linux__ )
 	#include "steam/steam_api.h"
+        #include <cstddef>
 	#define SW_PY extern "C" __attribute__ ((visibility("default")))
 #else
 	#error "Unsupported platform"
@@ -89,6 +90,7 @@ typedef void(*GlobalStatsReceivedCallback_t) (GlobalStatsReceived_t);
 typedef void(*DeleteItemResultCallback_t) (DeleteItemResult_t);
 typedef void(*DownloadItemResultCallback_t) (DownloadItemResult_t);
 typedef void(*SteamUGCDetailsCallback_t) (SteamUGCDetails_t);
+typedef void(*GamepadTextInputDismissedCallback_t) (GamepadTextInputDismissed_t);
 //-----------------------------------------------
 // Workshop Class
 //-----------------------------------------------
@@ -230,6 +232,10 @@ public:
 		_pyDownloadItemResultCallback = callback;
 	}
 
+	void SetGamepadTextInputDismissedCallback(GamepadTextInputDismissedCallback_t callback) {
+		_pyGamepadTextInputDismissedCallback = callback;
+	}
+
 	void RequestGlobalStats(int nHistoryDays) {
 		const SteamAPICall_t hSteamAPICall = SteamUserStats()->RequestGlobalStats(nHistoryDays);
 		_RequestGlobalStatsCallResult.Set(hSteamAPICall, this, &SteamCallbacks::OnGlobalStatsReceived);
@@ -253,6 +259,7 @@ private:
 	STEAM_CALLBACK(SteamCallbacks, OnUserStatsReceived, UserStatsReceived_t);
 	STEAM_CALLBACK(SteamCallbacks, OnUserStatsStored, UserStatsStored_t);
 	STEAM_CALLBACK(SteamCallbacks, OnItemDownloaded, DownloadItemResult_t);
+	STEAM_CALLBACK(SteamCallbacks, OnGamepadTextInputDismissed, GamepadTextInputDismissed_t);
 
 	GameOverlayActivatedCallback_t _pyGameOverlayActivatedCallback = nullptr;
 	ScreenshotReadyCallback_t _pyScreenshotReadyCallback = nullptr;
@@ -260,6 +267,7 @@ private:
 	GlobalStatsReceivedCallback_t _pyGlobalStatsReceivedCallback = nullptr;
 	DeleteItemResultCallback_t _pyDeleteItemResultCallback = nullptr;
 	DownloadItemResultCallback_t _pyDownloadItemResultCallback = nullptr;
+	GamepadTextInputDismissedCallback_t _pyGamepadTextInputDismissedCallback = nullptr;
 
 	void OnGlobalStatsReceived(GlobalStatsReceived_t *pCallback, bool bIOFailure) {
 		if (_pyGlobalStatsReceivedCallback != nullptr && !bIOFailure && pCallback->m_eResult == k_EResultOK && SteamUtils()->GetAppID() == pCallback->m_nGameID) {
@@ -311,6 +319,11 @@ void SteamCallbacks::OnItemDownloaded(DownloadItemResult_t *pCallback) {
 	}
 }
 
+void SteamCallbacks::OnGamepadTextInputDismissed(GamepadTextInputDismissed_t *pCallback) {
+	if (_pyGamepadTextInputDismissedCallback != nullptr && pCallback->m_bSubmitted) {
+		_pyGamepadTextInputDismissedCallback(*pCallback);
+	}
+}
 static SteamCallbacks callbacks;
 
 
@@ -340,6 +353,9 @@ SW_PY bool Workshop_DownloadItem(PublishedFileId_t nPublishedFileID, bool bHighP
 }
 SW_PY void Workshop_SetDownloadItemResultCallback(DownloadItemResultCallback_t callback) {
 	callbacks.SetDownloadItemResultCallback(callback);
+}
+SW_PY void Callbacks_SetGamepadTextInputDismissedCallback(GamepadTextInputDismissedCallback_t callback) {
+	callbacks.SetGamepadTextInputDismissedCallback(callback);
 }
 
 
@@ -745,6 +761,19 @@ SW_PY uint8 GetCurrentBatteryPower(){
 	}
 	return SteamUtils()->GetCurrentBatteryPower();
 }
+SW_PY bool GetEnteredGamepadTextInput(char* buffer, uint32 length){
+    if(SteamUtils() == NULL){
+        return false;
+    }
+
+    return SteamUtils()->GetEnteredGamepadTextInput(buffer, length);
+}
+SW_PY uint32 GetEnteredGamepadTextLength(){
+	if(SteamUtils() == NULL){
+		return 0;
+	}
+	return SteamUtils()->GetEnteredGamepadTextLength();
+}
 SW_PY const char* GetIPCountry(){
 	if(SteamUtils() == NULL){
 		return "None";
@@ -775,11 +804,23 @@ SW_PY bool IsOverlayEnabled(){
 	}
 	return SteamUtils()->IsOverlayEnabled();
 }
+SW_PY bool IsSteamInBigPictureMode() {
+    if (SteamUtils() == NULL) {
+        return false;
+    }
+    return SteamUtils()->IsSteamInBigPictureMode();
+}
 SW_PY bool IsSteamRunningInVR(){
 	if(SteamUtils() == NULL){
 		return false;
 	}
 	return SteamUtils()->IsSteamRunningInVR();
+}
+SW_PY bool IsSteamRunningOnSteamDeck(){
+	if(SteamUtils() == NULL){
+		return false;
+	}
+	return SteamUtils()->IsSteamRunningOnSteamDeck();
 }
 SW_PY const char* GetSteamUILanguage(){
 	if(SteamUtils() == NULL){
@@ -798,6 +839,26 @@ SW_PY void SetOverlayNotificationPosition(int pos){
 		return;
 	}
 	SteamUtils()->SetOverlayNotificationPosition(ENotificationPosition(pos));
+}
+SW_PY bool ShowGamepadTextInput(int inputMode, int lineInputMode, const char *description, uint32 maxText,
+                                const char *presetText) {
+    if (SteamUtils() == NULL) {
+        return false;
+    }
+    // Convert modes
+    EGamepadTextInputMode mode;
+    if (inputMode == 0) {
+        mode = k_EGamepadTextInputModeNormal;
+    } else {
+        mode = k_EGamepadTextInputModePassword;
+    }
+    EGamepadTextInputLineMode lineMode;
+    if (lineInputMode == 0) {
+        lineMode = k_EGamepadTextInputLineModeSingleLine;
+    } else {
+        lineMode = k_EGamepadTextInputLineModeMultipleLines;
+    }
+    return SteamUtils()->ShowGamepadTextInput(mode, lineMode, description, maxText, presetText);
 }
 //-----------------------------------------------
 // Steam Workshop
